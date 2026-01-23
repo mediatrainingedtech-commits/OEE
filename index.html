@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora OEE - Setor Têxtil</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #34495e;
+            --accent: #3498db;
+            --success: #27ae60;
+            --warning: #f1c40f;
+            --danger: #e74c3c;
+            --light: #ecf0f1;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: var(--primary);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h1 { text-align: center; color: var(--primary); border-bottom: 2px solid var(--light); padding-bottom: 10px; }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .input-group { display: flex; flex-direction: column; }
+        label { font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
+        input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        .results-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .card {
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            color: white;
+            transition: transform 0.2s;
+        }
+
+        .card h3 { margin: 0; font-size: 0.9em; text-transform: uppercase; }
+        .card p { margin: 10px 0 0; font-size: 1.8em; font-weight: bold; }
+
+        .oee-card { background: var(--primary); grid-column: 1 / -1; }
+        .disp-card { background: var(--accent); }
+        .perf-card { background: #8e44ad; }
+        .qual-card { background: var(--success); }
+
+        .tips {
+            margin-top: 30px;
+            padding: 15px;
+            background: #fff3cd;
+            border-left: 5px solid #ffeeba;
+            font-size: 0.9em;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        button:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Calculadora OEE Têxtil</h1>
+    
+    <div class="grid">
+        <div class="input-group">
+            <label>Tempo Total do Turno (min)</label>
+            <input type="number" id="tempoTotal" placeholder="Ex: 480" value="480">
+        </div>
+        <div class="input-group">
+            <label>Paradas Planejadas (min)</label>
+            <input type="number" id="paradasPlan" placeholder="Refeições, Manutenção" value="60">
+        </div>
+        <div class="input-group">
+            <label>Paradas Não Planejadas (min)</label>
+            <input type="number" id="paradasNaoPlan" placeholder="Quebras, Falhas" value="30">
+        </div>
+
+        <div class="input-group">
+            <label>Velocidade Nominal (unid/min)</label>
+            <input type="number" id="velNominal" placeholder="Ex: 10" value="10">
+        </div>
+        <div class="input-group">
+            <label>Produção Real (Total)</label>
+            <input type="number" id="prodReal" placeholder="Metros ou Kg" value="3500">
+        </div>
+        <div class="input-group">
+            <label>Peças de Segunda / Perda</label>
+            <input type="number" id="perda" placeholder="Defeitos" value="70">
+        </div>
+    </div>
+
+    <button onclick="calcularOEE()">Calcular Indicadores</button>
+
+    <div class="results-section">
+        <div class="card disp-card">
+            <h3>Disponibilidade</h3>
+            <p id="resDisp">0%</p>
+        </div>
+        <div class="card perf-card">
+            <h3>Performance</h3>
+            <p id="resPerf">0%</p>
+        </div>
+        <div class="card qual-card">
+            <h3>Qualidade</h3>
+            <p id="resQual">0%</p>
+        </div>
+        <div class="card oee-card">
+            <h3>OEE FINAL</h3>
+            <p id="resOEE">0%</p>
+        </div>
+    </div>
+
+    <div class="tips" id="feedback">
+        <strong>Dica:</strong> Insira os dados acima para ver a análise de eficiência.
+    </div>
+</div>
+
+<script>
+    function calcularOEE() {
+        // Coleta de dados [cite: 3]
+        const tempoTotal = parseFloat(document.getElementById('tempoTotal').value) || 0;
+        const paradasPlan = parseFloat(document.getElementById('paradasPlan').value) || 0;
+        const paradasNaoPlan = parseFloat(document.getElementById('paradasNaoPlan').value) || 0;
+        const velNominal = parseFloat(document.getElementById('velNominal').value) || 0;
+        const prodReal = parseFloat(document.getElementById('prodReal').value) || 0;
+        const perda = parseFloat(document.getElementById('perda').value) || 0;
+
+        // 1. Disponibilidade [cite: 8, 9, 10]
+        const tempoProgramado = tempoTotal - paradasPlan;
+        const tempoOperacao = tempoProgramado - paradasNaoPlan;
+        const disponibilidade = (tempoOperacao / tempoProgramado) * 100;
+
+        // 2. Performance [cite: 13, 14]
+        const producaoTeorica = tempoOperacao * velNominal;
+        const performance = (prodReal / producaoTeorica) * 100;
+
+        // 3. Qualidade [cite: 17]
+        const qualidade = ((prodReal - perda) / prodReal) * 100;
+
+        // 4. OEE Final 
+        const oee = (disponibilidade / 100) * (performance / 100) * (qualidade / 100) * 100;
+
+        // Exibir resultados formatados
+        document.getElementById('resDisp').innerText = disponibilidade.toFixed(1) + "%";
+        document.getElementById('resPerf').innerText = performance.toFixed(1) + "%";
+        document.getElementById('resQual').innerText = qualidade.toFixed(1) + "%";
+        document.getElementById('resOEE').innerText = oee.toFixed(1) + "%";
+
+        // Feedback Dinâmico 
+        const feedback = document.getElementById('feedback');
+        if (oee >= 85) {
+            feedback.innerHTML = "<strong>Status: Classe Mundial!</strong> Seu OEE está excelente (acima de 85%).";
+            feedback.style.background = "#d4edda";
+        } else if (oee < 60) {
+            feedback.innerHTML = "<strong>Alerta:</strong> OEE abaixo de 60%. Há oportunidades críticas de melhoria em manutenção ou processos.";
+            feedback.style.background = "#f8d7da";
+        } else {
+            feedback.innerHTML = "<strong>Análise:</strong> Produção estável, mas pode melhorar o setup ou a velocidade.";
+            feedback.style.background = "#fff3cd";
+        }
+    }
+</script>
+
+</body>
+</html>
